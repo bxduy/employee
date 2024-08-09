@@ -1,9 +1,11 @@
 import { DepartmentManagement } from "../departmentManagement/department_management.entity";
 import { Department } from "../department/department.entity";
 import { Role } from "../role/role.entity";
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('users')
+@Index(["first_name", "last_name"])
+@Index(["dob"])
 export class User {
     @PrimaryGeneratedColumn()
     id?: number;

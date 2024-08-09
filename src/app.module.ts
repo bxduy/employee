@@ -23,6 +23,7 @@ import { RedisModule } from './redis/redis.module';
       entities: ["dist/**/*.entity{.ts,.js}"],
       migrations: ["dist/migration/**/*{.ts,.js}"],
       migrationsTableName: "custom_migration_table",
+      timezone: 'UTC +7',
       logging: true 
     }),
     AuthModule,

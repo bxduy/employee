@@ -10,6 +10,7 @@ import { RoleService } from "src/role/role.service";
 import { EditUserDto } from "./dto/editUser.dto";
 import { ChangePasswordDto } from "./dto/changePassword.dto";
 import { RedisService } from "src/redis/redis.service";
+import { totalmem } from "os";
 
 @Injectable()
 export class UserService {
@@ -167,4 +168,42 @@ export class UserService {
                 refresh_token: null
             }).where("id = :id", { id: userId }).execute();
     }
+
+    async searchUserByName(first_name: string, last_name: string, page: number = 1, limit: number = 10): Promise<any> {
+
+        const [users, total] = await this.userRepository.createQueryBuilder('user')
+            .where('user.first_name like :first_name or user.last_name like :last_name',
+                {
+                    first_name: `%${first_name}%`,
+                    last_name: `%${last_name}%`
+                }
+            )
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount()
+        return {
+            users,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        }
+    }
+
+    async searchUserByDob(startDate: Date, endDate: Date, page: number = 1, limit: number = 10): Promise<any> {
+        const [users, total] = await this.userRepository.createQueryBuilder('user')
+            .where('user.dob BETWEEN :startDate AND :endDate', {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0]
+            })
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
+        return {
+            users,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        }
+    }
+
 }

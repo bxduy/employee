@@ -21,17 +21,6 @@ export class UsersController {
         private readonly userService: UserService,
     ) { }
 
-    @Get(':dep_id')
-    @Auth(['read_user'])
-    @UseGuards(AuthGuard)
-    async findAll(
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 10,
-        @Param('dep_id') dep_id: number
-    ): Promise<any> {
-
-        return await this.userService.getUserOfDepartment(dep_id, page, limit);
-    }
 
     @Post(':dep_id/create')
     @Auth(['create_user'])
@@ -43,7 +32,7 @@ export class UsersController {
         return await this.userService.createUser(body);
     }
 
-    @Get(':dep_id/:emp_id')
+    @Get('departments/:dep_id/users/:emp_id')
     @Auth(['read_user'])
     @UseGuards(AuthGuard)
     async getUserById(
@@ -116,6 +105,46 @@ export class UsersController {
         @Param('dep_id') dep_id: number,
         @Param('emp_id') emp_id: number
     ): Promise<any> { 
-        return this.userService.deleteUser(emp_id);
+        return await this.userService.deleteUser(emp_id);
     }
+
+    @Get('/search-name')
+    @UseGuards(AuthGuard)
+    async searchByName(
+        @Query('first_name') first_name: string,
+        @Query('last_name') last_name: string,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10
+    ): Promise<User[]> {
+        
+        return await this.userService.searchUserByName(first_name, last_name, page, limit);
+    }
+
+    @Get('/search-dob')
+    @UseGuards(AuthGuard)
+    async searchByDob(
+        @Query('startDate') start: string,
+        @Query('endDate') end: string,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10
+    ): Promise<User[]> {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return this.userService.searchUserByDob(startDate, endDate, page, limit);
+    }
+
+    @Get(':dep_id')
+    @Auth(['read_user'])
+    @UseGuards(AuthGuard)
+    async findAll(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Param('dep_id') dep_id: number
+    ): Promise<any> {
+
+        return await this.userService.getUserOfDepartment(dep_id, page, limit);
+    }
+
+
+
 }

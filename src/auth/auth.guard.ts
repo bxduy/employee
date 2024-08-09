@@ -28,12 +28,12 @@ export class AuthGuard {
             return false;
         }
         const token = authHeader.split(' ')[1];
-
+        
         try {
             const checkExistingToken = await Promise.any([
                 this.userService.checkExistingToken(token, 'access_token'),
                 this.redisService.get(token)
-            ])
+            ]) 
             if (!checkExistingToken) {
                 return false;
             }
@@ -41,9 +41,10 @@ export class AuthGuard {
             const userId = decodedToken.id;
             const depId = +request.params.dep_id;
             const empId = +request.params.emp_id;
-            
+
             if (requiredPermissions && depId) {
                 const userDepartments = await this.departmentManagementService.getDepartmentIdOfAdmin(userId);
+
                 let hasDepartment = this.checkDepartmentManagement(userDepartments, depId);
                 
                 if (!hasDepartment) {
