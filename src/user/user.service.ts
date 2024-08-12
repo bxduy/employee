@@ -169,15 +169,30 @@ export class UserService {
             }).where("id = :id", { id: userId }).execute();
     }
 
-    async searchUserByName(first_name: string, last_name: string, page: number = 1, limit: number = 10): Promise<any> {
-
-        const [users, total] = await this.userRepository.createQueryBuilder('user')
-            .where('user.first_name like :first_name or user.last_name like :last_name',
-                {
-                    first_name: `%${first_name}%`,
-                    last_name: `%${last_name}%`
-                }
+    async searchUserByName(name: string, page: number = 1, limit: number = 10): Promise<any> {
+        const nameParts = name.split(/\s+/);
+        let firstOrLastName: string | undefined;
+        let lastName: string | undefined;
+        let firstName: string | undefined;
+        if (nameParts.length === 1) {
+            firstOrLastName = nameParts[0];
+        } else {
+            firstName = nameParts.slice(0, -1).join(' ').trim();
+            lastName = nameParts[nameParts.length - 1];
+        }
+        let query = this.userRepository.createQueryBuilder('user');
+        if (firstOrLastName) {
+            query.andWhere('user.first_name LIKE :firstOrLastName OR user.last_name LIKE :firstOrLastName',
+                { firstOrLastName: `%${firstOrLastName}%` }
             )
+        }
+        if (firstName && lastName) {
+            query = query.andWhere('user.first_name LIKE :firstName AND user.last_name LIKE :lastName', {
+                firstName: `%${firstName}%`,
+                lastName: `%${lastName}%`,
+            });
+        }
+        const [users, total] = await query
             .skip((page - 1) * limit)
             .take(limit)
             .getManyAndCount()

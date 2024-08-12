@@ -111,13 +111,11 @@ export class UsersController {
     @Get('/search-name')
     @UseGuards(AuthGuard)
     async searchByName(
-        @Query('first_name') first_name: string,
-        @Query('last_name') last_name: string,
+        @Query('name') name: string,  
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10
-    ): Promise<User[]> {
-        
-        return await this.userService.searchUserByName(first_name, last_name, page, limit);
+    ): Promise<User[]> {  
+        return await this.userService.searchUserByName(name, page, limit);
     }
 
     @Get('/search-dob')
