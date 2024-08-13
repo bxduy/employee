@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, Req, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { AuthGuard } from "../auth/auth.guard";
 import { Auth } from "../auth/auth.decorator";
@@ -14,22 +14,43 @@ import { Request } from "express";
 import { EditUserDto } from "./dto/editUser.dto";
 import { ChangePasswordDto } from "./dto/changePassword.dto";
 import { RedisService } from "src/redis/redis.service";
+import { diskStorage } from "multer";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { extname } from "path";
+import { FileService } from "src/file/file.service";
 
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly userService: UserService,
+        private readonly fileService: FileService
     ) { }
 
 
     @Post(':dep_id/create')
     @Auth(['create_user'])
     @UseGuards(AuthGuard)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: './public/uploads',
+                filename: (req, file, cb) => {
+                    const filename = Date.now() + extname(file.originalname);
+                    cb(null, filename);
+                },
+            }),
+        }),
+    )
     async createUser(
         @Param('dep_id') dep_id: number,
-        @Body() body: CreateUserDto
+        @Body() body: CreateUserDto,
+        @UploadedFile() file: Express.Multer.File
     ): Promise<any> {
-        return await this.userService.createUser(body);
+        const user = await this.userService.createUser(body);
+        return await Promise.all([
+            this.fileService.saveFile(file.filename, file.path, "server", user),
+            this.fileService.saveCloud(file, "cloud", user)
+        ]);
     }
 
     @Get('departments/:dep_id/users/:emp_id')

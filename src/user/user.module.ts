@@ -9,6 +9,7 @@ import { DepartmentManagementModule } from "src/departmentManagement/department_
 import { DepartmentModule } from "src/department/department.module";
 import { RedisModule } from "src/redis/redis.module";
 import { RoleModule } from "src/role/role.module";
+import { FileModule } from "src/file/file.module";
 
 @Module({
     imports: [
@@ -18,7 +19,8 @@ import { RoleModule } from "src/role/role.module";
         DepartmentManagementModule,
         DepartmentModule,
         RedisModule,
-        RoleModule
+        RoleModule,
+        FileModule
     ],
     providers: [UserService],
     exports: [UserService],
