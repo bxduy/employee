@@ -38,12 +38,18 @@ export class AuthService {
 
     private createAccessToken(user: User): string {
         const payload = { id: user.id };
-        return this.jwtService.sign(payload)
+        return this.jwtService.sign(payload, {
+            secret: process.env.ACCESS_TOKEN_KEY,
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRE,
+          });
     }
 
     private createRefreshToken(user: User): string {
         const payload = { id: user.id, username: user.username };
-        return this.jwtService.sign(payload)
+        return this.jwtService.sign(payload, {
+            secret: process.env.REFRESH_TOKEN_KEY,
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
+          });
     }
 
     async refreshToken(token: string): Promise<any> { 

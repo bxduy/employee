@@ -8,6 +8,7 @@ import { AuthModule } from "src/auth/auth.module";
 import { PermissionsModule } from "src/permission/permission.module";
 import { UserModule } from "src/user/user.module";
 import { RedisModule } from "src/redis/redis.module";
+import { FileModule } from "src/file/file.module";
 
 @Module({
     imports: [
@@ -16,7 +17,8 @@ import { RedisModule } from "src/redis/redis.module";
         forwardRef(() => AuthModule),
         PermissionsModule,
         forwardRef(() => UserModule),
-        RedisModule
+        RedisModule,
+        FileModule
     ],
     providers: [DepartmentService],
     exports: [DepartmentService],

@@ -2,21 +2,14 @@ import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, 
 import { UserService } from "./user.service";
 import { AuthGuard } from "../auth/auth.guard";
 import { Auth } from "../auth/auth.decorator";
-import { DataResponse } from "../config/responseConfig";
-import { DepartmentManagementService } from "../departmentManagement/department_management.service";
-import { DepartmentService } from "../department/department.service";
 import { CreateUserDto } from "./dto/createUser.dto";
-import { ErrorHandlingInterceptor } from "src/interceptor/error.interceptor";
-import { RoleService } from "src/role/role.service";
-import { TransformInterceptor } from "src/interceptor/transform.interceptor";
 import { User } from "./user.entity";
 import { Request } from "express";
 import { EditUserDto } from "./dto/editUser.dto";
 import { ChangePasswordDto } from "./dto/changePassword.dto";
-import { RedisService } from "src/redis/redis.service";
 import { diskStorage } from "multer";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { extname, join } from "path";
+import { extname } from "path";
 import { FileService } from "src/file/file.service";
 
 @Controller('users')
@@ -26,44 +19,7 @@ export class UsersController {
         private readonly fileService: FileService
     ) { }
 
-
-    @Post(':dep_id/create')
-    @Auth(['create_user'])
-    @UseGuards(AuthGuard)
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: 'src/public/uploads',
-                filename: (req, file, cb) => {
-                    const filename = Date.now() + extname(file.originalname);
-                    cb(null, filename);
-                },
-            }),
-        }),
-    )
-    async createUser(
-        @Param('dep_id') dep_id: number,
-        @Body() body: CreateUserDto,
-        @UploadedFile() file: Express.Multer.File
-    ): Promise<any> {
-        const user = await this.userService.createUser(body);
-        return await Promise.all([
-            this.fileService.saveFile(file.filename, file.path, "server", user),
-            this.fileService.saveCloud(file, "cloud", user)
-        ]);
-    }
-
-    @Get('departments/:dep_id/users/:emp_id')
-    @Auth(['read_user'])
-    @UseGuards(AuthGuard)
-    async getUserById(
-        @Param('dep_id') dep_id: number,
-        @Param('emp_id') emp_id: number
-    ): Promise<User> {
-        return await this.userService.getUserById(emp_id);
-    }
-
-    @Get('')
+    @Get('/profile')
     @UseGuards(AuthGuard)
     async getProfile(
         @Req() req: Request
@@ -73,7 +29,6 @@ export class UsersController {
         return await this.userService.getUserById(userId);
     }
 
-
     @Put('/edit')
     @UseGuards(AuthGuard)
     async editUser(
@@ -82,17 +37,6 @@ export class UsersController {
     ): Promise<any> {
         const { user } = req as any;
         const emp_id = user.id;
-        return await this.userService.updateUser((Number)(emp_id), body);
-    }
-
-    @Put(':dep_id/:emp_id/edit')
-    @Auth(['read_user'])
-    @UseGuards(AuthGuard)
-    async editUserForAdmin(
-        @Param('dep_id') dep_id: number,
-        @Param('emp_id') emp_id: number,
-        @Body() body: EditUserDto
-    ): Promise<any> {
         return await this.userService.updateUser((Number)(emp_id), body);
     }
 
@@ -117,17 +61,7 @@ export class UsersController {
         const { user } = req as any;
         const userId = user.id;
         return await this.userService.deleteToken(userId);
-    }
-
-    @Delete(':dep_id/:emp_id/delete')
-    @Auth(['delete_user'])
-    @UseGuards(AuthGuard)
-    async deleteUser(
-        @Param('dep_id') dep_id: number,
-        @Param('emp_id') emp_id: number
-    ): Promise<any> { 
-        return await this.userService.deleteUser(emp_id);
-    }
+    }  
 
     @Get('/search-name')
     @UseGuards(AuthGuard)
@@ -151,19 +85,4 @@ export class UsersController {
         const endDate = new Date(end);
         return this.userService.searchUserByDob(startDate, endDate, page, limit);
     }
-
-    @Get(':dep_id')
-    @Auth(['read_user'])
-    @UseGuards(AuthGuard)
-    async findAll(
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 10,
-        @Param('dep_id') dep_id: number
-    ): Promise<any> {
-
-        return await this.userService.getUserOfDepartment(dep_id, page, limit);
-    }
-
-
-
 }

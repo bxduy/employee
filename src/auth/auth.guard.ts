@@ -6,7 +6,8 @@ import { DepartmentManagementService } from "src/departmentManagement/department
 import { UserService } from "src/user/user.service";
 import { RedisService } from "src/redis/redis.service";
 import { DepartmentService } from "src/department/department.service";
-
+import * as dotenv from "dotenv";
+dotenv.config({ path: '../.env' });
 @Injectable()
 export class AuthGuard {
     constructor(
@@ -37,7 +38,8 @@ export class AuthGuard {
             if (!checkExistingToken) {
                 return false;
             }
-            const decodedToken = this.jwtService.verify(token);
+            const secret: string = process.env.ACCESS_TOKEN_KEY;
+            const decodedToken = this.jwtService.verify(token, {secret});
             const userId = decodedToken.id;
             const depId = +request.params.dep_id;
             const empId = +request.params.emp_id;

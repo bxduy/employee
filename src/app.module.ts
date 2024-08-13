@@ -13,13 +13,16 @@ import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: '1312002',
-      database: 'employee',
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME, 
       entities: ["dist/**/*.entity{.ts,.js}"],
       migrations: ["dist/migration/**/*{.ts,.js}"],
       migrationsTableName: "custom_migration_table",
