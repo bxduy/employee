@@ -16,7 +16,7 @@ import { ChangePasswordDto } from "./dto/changePassword.dto";
 import { RedisService } from "src/redis/redis.service";
 import { diskStorage } from "multer";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { extname } from "path";
+import { extname, join } from "path";
 import { FileService } from "src/file/file.service";
 
 @Controller('users')
@@ -33,7 +33,7 @@ export class UsersController {
     @UseInterceptors(
         FileInterceptor('file', {
             storage: diskStorage({
-                destination: './public/uploads',
+                destination: 'src/public/uploads',
                 filename: (req, file, cb) => {
                     const filename = Date.now() + extname(file.originalname);
                     cb(null, filename);
