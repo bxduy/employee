@@ -2,18 +2,11 @@ import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, 
 import { UserService } from "./user.service";
 import { AuthGuard } from "../auth/auth.guard";
 import { Auth } from "../auth/auth.decorator";
-import { DataResponse } from "../config/responseConfig";
-import { DepartmentManagementService } from "../departmentManagement/department_management.service";
-import { DepartmentService } from "../department/department.service";
 import { CreateUserDto } from "./dto/createUser.dto";
-import { ErrorHandlingInterceptor } from "src/interceptor/error.interceptor";
-import { RoleService } from "src/role/role.service";
-import { TransformInterceptor } from "src/interceptor/transform.interceptor";
 import { User } from "./user.entity";
 import { Request } from "express";
 import { EditUserDto } from "./dto/editUser.dto";
 import { ChangePasswordDto } from "./dto/changePassword.dto";
-import { RedisService } from "src/redis/redis.service";
 import { diskStorage } from "multer";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { extname, join } from "path";

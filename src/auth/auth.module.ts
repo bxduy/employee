@@ -5,7 +5,6 @@ import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
 import { PermissionsModule } from "../permission/permission.module";
 import { DepartmentManagementModule } from "src/departmentManagement/department_management.module";
-import { RedisModule } from "src/redis/redis.module";
 import { AuthGuard } from "./auth.guard";
 import { DepartmentModule } from "src/department/department.module";
 
@@ -18,7 +17,6 @@ import { DepartmentModule } from "src/department/department.module";
         forwardRef(() => UserModule),
         PermissionsModule,
         DepartmentManagementModule,
-        RedisModule,
         DepartmentModule
     ],
     providers: [AuthService],

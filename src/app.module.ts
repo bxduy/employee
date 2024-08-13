@@ -8,7 +8,6 @@ import { PermissionsModule } from './permission/permission.module';
 import { DepartmentManagementModule } from './departmentManagement/department_management.module';
 import { DepartmentModule } from './department/department.module';
 import { ConfigModule } from '@nestjs/config';
-import { RedisModule } from './redis/redis.module';
 
 
 @Module({
@@ -30,8 +29,7 @@ import { RedisModule } from './redis/redis.module';
     UserModule,
     PermissionsModule,
     DepartmentManagementModule,
-    DepartmentModule,
-    RedisModule
+    DepartmentModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,7 +4,6 @@ import { PermissionsService } from "../permission/permission.service";
 import { Reflector } from "@nestjs/core";
 import { DepartmentManagementService } from "src/departmentManagement/department_management.service";
 import { UserService } from "src/user/user.service";
-import { RedisService } from "src/redis/redis.service";
 import { DepartmentService } from "src/department/department.service";
 
 @Injectable()
@@ -14,7 +13,6 @@ export class AuthGuard {
         private readonly permissionService: PermissionsService,
         private readonly departmentManagementService: DepartmentManagementService,
         private readonly userService: UserService,
-        private readonly redisService: RedisService,
         private readonly departmentService: DepartmentService,
         private reflector: Reflector
     ) { }
@@ -31,8 +29,7 @@ export class AuthGuard {
         
         try {
             const checkExistingToken = await Promise.any([
-                this.userService.checkExistingToken(token, 'access_token'),
-                this.redisService.get(token)
+                this.userService.checkExistingToken(token, 'access_token')
             ]) 
             if (!checkExistingToken) {
                 return false;

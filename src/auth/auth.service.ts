@@ -4,14 +4,12 @@ import * as bcrypt from 'bcrypt'
 import { UserLoginDto } from "../user/dto/userLogin.dto";
 import { User } from "../user/user.entity";
 import { UserService } from "../user/user.service";
-import { RedisService } from "src/redis/redis.service";
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
-        private readonly redisService: RedisService
     ) { }
 
     async isExistingUser(userLoginDto: UserLoginDto): Promise<any> {
@@ -28,7 +26,6 @@ export class AuthService {
             const { id, password, access_token, refresh_token, ...userWithoutPassword } = user;
             await Promise.all([
                 this.userService.updateToken(id, accessToken, refreshToken),
-                this.redisService.set(accessToken, accessToken)
             ]);
             return { user: userWithoutPassword, accessToken, refreshToken };
         }
@@ -53,8 +50,7 @@ export class AuthService {
         }
         const accessToken = this.createAccessToken(user);
         await Promise.all([
-            this.userService.updateAccessToken(user.id, accessToken),
-            this.redisService.set(accessToken, accessToken)
+            this.userService.updateAccessToken(user.id, accessToken)
         ]) 
         return { accessToken };
     }
