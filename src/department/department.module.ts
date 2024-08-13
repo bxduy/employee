@@ -7,6 +7,8 @@ import { DepartmentController } from "./department.controller";
 import { AuthModule } from "src/auth/auth.module";
 import { PermissionsModule } from "src/permission/permission.module";
 import { UserModule } from "src/user/user.module";
+import { RedisModule } from "src/redis/redis.module";
+import { FileModule } from "src/file/file.module";
 
 @Module({
     imports: [
@@ -14,7 +16,9 @@ import { UserModule } from "src/user/user.module";
         DepartmentManagementModule,
         forwardRef(() => AuthModule),
         PermissionsModule,
-        forwardRef(() => UserModule)
+        forwardRef(() => UserModule),
+        RedisModule,
+        FileModule
     ],
     providers: [DepartmentService],
     exports: [DepartmentService],

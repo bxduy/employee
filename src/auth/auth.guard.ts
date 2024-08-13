@@ -4,8 +4,10 @@ import { PermissionsService } from "../permission/permission.service";
 import { Reflector } from "@nestjs/core";
 import { DepartmentManagementService } from "src/departmentManagement/department_management.service";
 import { UserService } from "src/user/user.service";
+import { RedisService } from "src/redis/redis.service";
 import { DepartmentService } from "src/department/department.service";
-
+import * as dotenv from "dotenv";
+dotenv.config({ path: '../.env' });
 @Injectable()
 export class AuthGuard {
     constructor(
@@ -13,6 +15,7 @@ export class AuthGuard {
         private readonly permissionService: PermissionsService,
         private readonly departmentManagementService: DepartmentManagementService,
         private readonly userService: UserService,
+        private readonly redisService: RedisService,
         private readonly departmentService: DepartmentService,
         private reflector: Reflector
     ) { }
@@ -29,12 +32,14 @@ export class AuthGuard {
         
         try {
             const checkExistingToken = await Promise.any([
-                this.userService.checkExistingToken(token, 'access_token')
+                this.userService.checkExistingToken(token, 'access_token'),
+                this.redisService.get(token)
             ]) 
             if (!checkExistingToken) {
                 return false;
             }
-            const decodedToken = this.jwtService.verify(token);
+            const secret: string = process.env.ACCESS_TOKEN_KEY;
+            const decodedToken = this.jwtService.verify(token, {secret});
             const userId = decodedToken.id;
             const depId = +request.params.dep_id;
             const empId = +request.params.emp_id;

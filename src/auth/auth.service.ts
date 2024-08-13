@@ -4,12 +4,14 @@ import * as bcrypt from 'bcrypt'
 import { UserLoginDto } from "../user/dto/userLogin.dto";
 import { User } from "../user/user.entity";
 import { UserService } from "../user/user.service";
+import { RedisService } from "src/redis/redis.service";
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
+        private readonly redisService: RedisService
     ) { }
 
     async isExistingUser(userLoginDto: UserLoginDto): Promise<any> {
@@ -26,6 +28,7 @@ export class AuthService {
             const { id, password, access_token, refresh_token, ...userWithoutPassword } = user;
             await Promise.all([
                 this.userService.updateToken(id, accessToken, refreshToken),
+                this.redisService.set(accessToken, accessToken)
             ]);
             return { user: userWithoutPassword, accessToken, refreshToken };
         }
@@ -35,12 +38,18 @@ export class AuthService {
 
     private createAccessToken(user: User): string {
         const payload = { id: user.id };
-        return this.jwtService.sign(payload)
+        return this.jwtService.sign(payload, {
+            secret: process.env.ACCESS_TOKEN_KEY,
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRE,
+          });
     }
 
     private createRefreshToken(user: User): string {
         const payload = { id: user.id, username: user.username };
-        return this.jwtService.sign(payload)
+        return this.jwtService.sign(payload, {
+            secret: process.env.REFRESH_TOKEN_KEY,
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
+          });
     }
 
     async refreshToken(token: string): Promise<any> { 
@@ -50,7 +59,8 @@ export class AuthService {
         }
         const accessToken = this.createAccessToken(user);
         await Promise.all([
-            this.userService.updateAccessToken(user.id, accessToken)
+            this.userService.updateAccessToken(user.id, accessToken),
+            this.redisService.set(accessToken, accessToken)
         ]) 
         return { accessToken };
     }

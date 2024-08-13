@@ -9,6 +9,7 @@ import * as bcrypt from "bcrypt";
 import { RoleService } from "src/role/role.service";
 import { EditUserDto } from "./dto/editUser.dto";
 import { ChangePasswordDto } from "./dto/changePassword.dto";
+import { RedisService } from "src/redis/redis.service";
 import { totalmem } from "os";
 
 @Injectable()

@@ -8,17 +8,21 @@ import { PermissionsModule } from './permission/permission.module';
 import { DepartmentManagementModule } from './departmentManagement/department_management.module';
 import { DepartmentModule } from './department/department.module';
 import { ConfigModule } from '@nestjs/config';
+import { RedisModule } from './redis/redis.module';
 
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'root',
-      password: '1312002',
-      database: 'employee',
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME, 
       entities: ["dist/**/*.entity{.ts,.js}"],
       migrations: ["dist/migration/**/*{.ts,.js}"],
       migrationsTableName: "custom_migration_table",
@@ -29,7 +33,8 @@ import { ConfigModule } from '@nestjs/config';
     UserModule,
     PermissionsModule,
     DepartmentManagementModule,
-    DepartmentModule
+    DepartmentModule,
+    RedisModule
   ],
   controllers: [AppController],
   providers: [AppService],

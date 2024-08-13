@@ -7,6 +7,7 @@ import { UsersController } from "./user.controller";
 import { PermissionsModule } from "src/permission/permission.module";
 import { DepartmentManagementModule } from "src/departmentManagement/department_management.module";
 import { DepartmentModule } from "src/department/department.module";
+import { RedisModule } from "src/redis/redis.module";
 import { RoleModule } from "src/role/role.module";
 import { FileModule } from "src/file/file.module";
 
@@ -17,6 +18,7 @@ import { FileModule } from "src/file/file.module";
         PermissionsModule,
         DepartmentManagementModule,
         DepartmentModule,
+        RedisModule,
         RoleModule,
         FileModule
     ],
