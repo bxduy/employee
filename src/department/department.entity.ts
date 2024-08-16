@@ -1,3 +1,4 @@
+import { Class } from "src/class/class.entity";
 import { User } from "../user/user.entity";
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
@@ -11,4 +12,7 @@ export class Department{
 
     @OneToMany(() => User, (user) => user.department)
     users?: User[];
+
+    @OneToMany(() => Class, (cls) => cls.department)
+    classes: Class[];
 }

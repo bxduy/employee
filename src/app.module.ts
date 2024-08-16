@@ -5,10 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PermissionsModule } from './permission/permission.module';
-import { DepartmentManagementModule } from './departmentManagement/department_management.module';
 import { DepartmentModule } from './department/department.module';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
+import { ClassModule } from './class/class.module';
 
 
 @Module({
@@ -32,9 +32,9 @@ import { RedisModule } from './redis/redis.module';
     AuthModule,
     UserModule,
     PermissionsModule,
-    DepartmentManagementModule,
     DepartmentModule,
-    RedisModule
+    RedisModule,
+    ClassModule
   ],
   controllers: [AppController],
   providers: [AppService],

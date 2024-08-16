@@ -5,22 +5,26 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./user.entity";
 import { UsersController } from "./user.controller";
 import { PermissionsModule } from "src/permission/permission.module";
-import { DepartmentManagementModule } from "src/departmentManagement/department_management.module";
 import { DepartmentModule } from "src/department/department.module";
 import { RedisModule } from "src/redis/redis.module";
 import { RoleModule } from "src/role/role.module";
 import { FileModule } from "src/file/file.module";
+import { ClassModule } from "src/class/class.module";
+import { StudentModule } from "src/student/student.module";
+import { TeacherModule } from "src/teacher/teacher.module";
 
 @Module({
     imports: [
         forwardRef(() => AuthModule),
         TypeOrmModule.forFeature([User]),
         PermissionsModule,
-        DepartmentManagementModule,
         DepartmentModule,
         RedisModule,
         RoleModule,
-        FileModule
+        FileModule,
+        forwardRef(() => ClassModule),
+        forwardRef(() => StudentModule),
+        forwardRef(() => TeacherModule)
     ],
     providers: [UserService],
     exports: [UserService],

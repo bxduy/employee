@@ -11,7 +11,7 @@ export class PermissionsService {
     ) { }
 
     async getPermissions(userId: number): Promise<any> {
-        return this.permissionRepository.createQueryBuilder('permission')
+        return await this.permissionRepository.createQueryBuilder('permission')
             .innerJoin('roles', 'role')
             .innerJoin('users', 'user')
             .where('user.id = :userId', { userId })

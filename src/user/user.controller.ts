@@ -1,23 +1,56 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { UserService } from "./user.service";
 import { AuthGuard } from "../auth/auth.guard";
-import { Auth } from "../auth/auth.decorator";
+import { Roles } from "../auth/auth.decorator";
 import { CreateUserDto } from "./dto/createUser.dto";
 import { User } from "./user.entity";
 import { Request } from "express";
 import { EditUserDto } from "./dto/editUser.dto";
-import { ChangePasswordDto } from "./dto/changePassword.dto";
+import { ChangeUsernamePasswordDto } from "./dto/changeUsernamePassword.dto";
 import { diskStorage } from "multer";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { extname } from "path";
 import { FileService } from "src/file/file.service";
+import { StudentService } from "src/student/student.service";
+import { TeacherService } from "src/teacher/teacher.service";
+import { Role } from "src/role/role.entity";
 
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly userService: UserService,
-        private readonly fileService: FileService
+        private readonly fileService: FileService,
+        private readonly studentService: StudentService,
+        private teacherService: TeacherService
     ) { }
+
+    @Post('/create-user')
+    @Roles(['admin'])
+    @UseGuards(AuthGuard)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: 'src/public/uploads',
+                filename: (req, file, cb) => {
+                    const filename = Date.now() + extname(file.originalname);
+                    cb(null, filename);
+                },
+            }),
+        }),
+    )
+    async createUser(
+        @Body() body: CreateUserDto,
+        @UploadedFile() file: Express.Multer.File
+    ): Promise<any> {
+        const user = await this.userService.createUser(body);
+        await Promise.all([
+            user.role.name === 'student' ?
+                this.studentService.createStudent(user) : this.teacherService.createTeacher(user),
+            this.fileService.saveFile(file.filename, file.path, "server", user),
+            this.fileService.saveCloud(file, "cloud", user)
+        ]);
+        return;
+    }
 
     @Get('/profile')
     @UseGuards(AuthGuard)
@@ -40,19 +73,15 @@ export class UsersController {
         return await this.userService.updateUser((Number)(emp_id), body);
     }
 
-    @Post('/change-password')
+    @Post('/change-username-password')
     @UseGuards(AuthGuard)
-    async changePassword(
-        @Body() body: ChangePasswordDto,
+    async changeUsernameAndPassword(
+        @Body() body: ChangeUsernamePasswordDto,
         @Req() req: Request
     ): Promise<any> { 
         const { user } = req as any;
         const userId = user.id;
-        const checkOldPassword = await this.userService.checkOldPassword(userId, body.oldPassword);
-        if (checkOldPassword) {
-            return await this.userService.changePassword(userId, body);
-        }
-        throw new HttpException("Invalid password", HttpStatus.NOT_FOUND);
+        return await this.userService.changeUsernameAndPassword(userId, body);
     }
 
     @Post('/logout')
@@ -84,5 +113,24 @@ export class UsersController {
         const startDate = new Date(start);
         const endDate = new Date(end);
         return this.userService.searchUserByDob(startDate, endDate, page, limit);
+    }
+
+    @Put(':user_id/edit')
+    @Roles(['admin'])
+    @UseGuards(AuthGuard)
+    async adminEditUser(
+        @Body() body: EditUserDto,
+        @Param('user_id') user_id: number
+    ): Promise<any> {
+        return await this.userService.updateUser(+user_id, body);
+    }
+
+    @Delete(':user_id/delete')
+    @Roles(['admin'])
+    @UseGuards(AuthGuard)
+    async adminDeleteUser(
+        @Param('user_id') user_id: number
+    ): Promise<any> { 
+        return await this.userService.deleteUser(user_id);
     }
 }

@@ -8,7 +8,7 @@ import { CreateUserDto } from "./dto/createUser.dto";
 import * as bcrypt from "bcrypt";
 import { RoleService } from "src/role/role.service";
 import { EditUserDto } from "./dto/editUser.dto";
-import { ChangePasswordDto } from "./dto/changePassword.dto";
+import { ChangeUsernamePasswordDto } from "./dto/changeUsernamePassword.dto";
 import { RedisService } from "src/redis/redis.service";
 import { totalmem } from "os";
 
@@ -24,7 +24,7 @@ export class UserService {
     async checkExistingUser(username: string): Promise<any> {
         return await this.userRepository.findOne({
             where: { username },
-            relations: ['role', 'department'],
+            relations: ['role', 'department', 'files'],
         });
     }
 
@@ -49,7 +49,7 @@ export class UserService {
             username,
             password: hashPassword
         })
-        return this.userRepository.save(newUser);
+        return await this.userRepository.save(newUser);
     }
 
     async getUserOfDepartment(dep_id: number, page: number = 1, limit: number = 10): Promise<any> {
@@ -125,13 +125,9 @@ export class UserService {
     }
 
     async updateUser(userId: number, editUserDto: EditUserDto): Promise<any> {
-        const { username, first_name, last_name, gender, dob, address } = editUserDto;
-        const existUsername = await this.userRepository.findOneBy({ username });
-        if (existUsername && userId !== existUsername.id) {
-            throw new HttpException(`User ${username} already exists`, HttpStatus.BAD_REQUEST);
-        }
+        const { first_name, last_name, gender, dob, address } = editUserDto;
         return await this.userRepository.createQueryBuilder().update({
-            username, first_name, last_name, gender, dob, address
+            first_name, last_name, gender, dob, address
         }).where("id = :id", { id: userId }).execute();
     }
 
@@ -140,7 +136,7 @@ export class UserService {
             .softDelete().where("id = :id", { id: userId }).execute();
     }
 
-    async checkOldPassword(userId: number, oldPassword: string): Promise<boolean> {
+    private async checkOldPassword(userId: number, oldPassword: string): Promise<boolean> {
         const user = await this.userRepository.findOne({
             select: ['password'],
             where: {
@@ -151,8 +147,16 @@ export class UserService {
         return await bcrypt.compare(oldPassword, user.password);
     }
 
-    async changePassword(userId: number, changePasswordDto: ChangePasswordDto): Promise<any> {
-        const { oldPassword, newPassword, confirmPassword } = changePasswordDto;
+    async changeUsernameAndPassword(userId: number, changePasswordDto: ChangeUsernamePasswordDto): Promise<any> {
+        const { username, oldPassword, newPassword, confirmPassword } = changePasswordDto;
+        const existUsername = await this.userRepository.findOneBy({ username });
+        if (existUsername && userId !== existUsername.id) {
+            throw new HttpException(`User ${username} already exists`, HttpStatus.BAD_REQUEST);
+        }
+        const checkOldPassword = await this.checkOldPassword(userId, oldPassword);
+        if (!checkOldPassword) { 
+            throw new HttpException("Invalid password", HttpStatus.NOT_FOUND);
+        }
         if (newPassword !== confirmPassword) {
             throw new HttpException('Password and Confirm Password must be same', HttpStatus.BAD_REQUEST);
         }
@@ -182,14 +186,17 @@ export class UserService {
         }
         let query = this.userRepository.createQueryBuilder('user');
         if (firstOrLastName) {
-            query.andWhere('user.first_name LIKE :firstOrLastName OR user.last_name LIKE :firstOrLastName',
+            query = query.andWhere('user.first_name LIKE :firstOrLastName',
+                { firstOrLastName: `%${firstOrLastName}%` }
+            ).orWhere('user.last_name LIKE :firstOrLastName',
                 { firstOrLastName: `%${firstOrLastName}%` }
             )
         }
         if (firstName && lastName) {
-            query = query.andWhere('user.first_name LIKE :firstName AND user.last_name LIKE :lastName', {
-                firstName: `%${firstName}%`,
-                lastName: `%${lastName}%`,
+            query = query.andWhere('user.first_name LIKE :firstName', {
+                firstName: `%${firstName}%`
+            }).andWhere('user.last_name LIKE :lastName', {
+                lastName: `%${lastName}%`
             });
         }
         const [users, total] = await query
@@ -219,6 +226,10 @@ export class UserService {
             totalPages: Math.ceil(total / limit),
             currentPage: page
         }
+    }
+
+    async getTeacherOfDepartment(depId: number, page: number = 1, limit: number = 10): Promise<any> {
+
     }
 
 }

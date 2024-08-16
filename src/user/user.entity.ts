@@ -1,8 +1,9 @@
-import { DepartmentManagement } from "../departmentManagement/department_management.entity";
+
 import { Department } from "../department/department.entity";
 import { Role } from "../role/role.entity";
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { File } from "src/file/file.entity";
+import { Student } from "src/student/student.entity";
 
 @Entity('users')
 @Index(["first_name", "last_name"])
@@ -54,5 +55,8 @@ export class User {
     department: Department
 
     @OneToMany(() => File, (file) => file.user)
-    files: File[]
+    files: File[];
+
+    @OneToOne(() => Student, (student) => student.user)
+    student: Student;
 }

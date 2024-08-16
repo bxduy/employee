@@ -1,85 +1,63 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { DepartmentService } from "./department.service";
-import { DepartmentManagementService } from "src/departmentManagement/department_management.service";
-import { DataResponse } from "src/config/responseConfig";
 import { AuthGuard } from "src/auth/auth.guard";
 import { Request } from "express";
 import { UserService } from "src/user/user.service";
-import { FileInterceptor } from "@nestjs/platform-express";
-import { diskStorage } from "multer";
-import { extname } from "path";
-import { Auth } from "src/auth/auth.decorator";
-import { CreateUserDto } from "src/user/dto/createUser.dto";
-import { FileService } from "src/file/file.service";
-import { User } from "src/user/user.entity";
-import { EditUserDto } from "src/user/dto/editUser.dto";
+import { Roles } from "src/auth/auth.decorator";
+import { EditDepartmentDto } from "./dto/edit_department.dto";
+import { ClassService } from "src/class/class.service";
+import { CreateDepartmentDto } from "./dto/create_department.dto";
 
 @Controller('departments')
 export class DepartmentController {
     constructor(
         private readonly departmentService: DepartmentService,
-        private readonly departmentManagementService: DepartmentManagementService,
+        private readonly classService: ClassService,
         private readonly userService: UserService,
-        private readonly fileService: FileService
     ) { }
     @Get()
+    @Roles(['admin'])
     @UseGuards(AuthGuard)
-    async getDepartmentsOfUser(@Req() req: Request): Promise<any> {
-        const { user } = req as any;
-        const userId = user.id;
-        const ids = await this.departmentManagementService.getDepartmentIdOfAdmin(userId);
-        return await this.departmentService.getDepartmentOfAdmin(ids);
-    }
-
-    @Post(':dep_id/create-user')
-    @Auth(['create_user'])
-    @UseGuards(AuthGuard)
-    @UseInterceptors(
-        FileInterceptor('file', {
-            storage: diskStorage({
-                destination: 'src/public/uploads',
-                filename: (req, file, cb) => {
-                    const filename = Date.now() + extname(file.originalname);
-                    cb(null, filename);
-                },
-            }),
-        }),
-    )
-    async createUser(
-        @Param('dep_id') dep_id: number,
-        @Body() body: CreateUserDto,
-        @UploadedFile() file: Express.Multer.File
+    async getDepartments(
+        @Query('page') page: number,
+        @Query('limit') limit: number
     ): Promise<any> {
-        const user = await this.userService.createUser(body);
-        return await Promise.all([
-            this.fileService.saveFile(file.filename, file.path, "server", user),
-            this.fileService.saveCloud(file, "cloud", user)
-        ]);
+        return this.departmentService.getDepartments(page, limit);
     }
 
-    @Get(':dep_id/users/:emp_id')
-    @Auth(['read_user'])
+    @Post('/create')
+    @Roles(['admin'])
     @UseGuards(AuthGuard)
-    async getUserById(
-        @Param('dep_id') dep_id: number,
-        @Param('emp_id') emp_id: number
-    ): Promise<User> {
-        return await this.userService.getUserById(emp_id);
+    async createDepartment(
+        @Body() body: CreateDepartmentDto
+    ): Promise<any>{
+        return this.departmentService.createDepartment(body);
     }
 
-    @Put(':dep_id/users/:emp_id/edit')
-    @Auth(['read_user'])
+    @Put(':dep_id/edit')
+    @Roles(['admin'])
     @UseGuards(AuthGuard)
-    async editUserForAdmin(
+    async editDepartment( 
         @Param('dep_id') dep_id: number,
-        @Param('emp_id') emp_id: number,
-        @Body() body: EditUserDto
-    ): Promise<any> {
-        return await this.userService.updateUser((Number)(emp_id), body);
+        @Body() body: EditDepartmentDto
+    ): Promise<any> { 
+        return this.departmentService.editDepartment(dep_id, body);
     }
+
+    @Get(':dep_id/classes')
+    @Roles(['admin'])
+    @UseGuards(AuthGuard)
+    async getClassesOfDepartment(
+        @Param('dep_id') dep_id: number,
+        @Query('page') page: number,
+        @Query('limit') limit: number
+    ): Promise<any> { 
+        return await this.classService.getClassesOfDepartment(dep_id, page, limit);
+    }
+
 
     @Delete(':dep_id/users/:emp_id/delete')
-    @Auth(['delete_user'])
+    @Roles(['admin'])
     @UseGuards(AuthGuard)
     async deleteUser(
         @Param('dep_id') dep_id: number,
@@ -89,7 +67,7 @@ export class DepartmentController {
     }
 
     @Get(':dep_id/users')
-    @Auth(['read_user'])
+    @Roles(['admin'])
     @UseGuards(AuthGuard)
     async findAll(
         @Query('page') page: number = 1,

@@ -1,26 +1,25 @@
 import { ExecutionContext, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { PermissionsService } from "../permission/permission.service";
 import { Reflector } from "@nestjs/core";
-import { DepartmentManagementService } from "src/departmentManagement/department_management.service";
 import { UserService } from "src/user/user.service";
 import { RedisService } from "src/redis/redis.service";
-import { DepartmentService } from "src/department/department.service";
 import * as dotenv from "dotenv";
+import { Role } from "src/role/role.entity";
+import { RoleService } from "src/role/role.service";
+import { ClassService } from "src/class/class.service";
 dotenv.config({ path: '../.env' });
 @Injectable()
 export class AuthGuard {
     constructor(
         private readonly jwtService: JwtService,
-        private readonly permissionService: PermissionsService,
-        private readonly departmentManagementService: DepartmentManagementService,
+        private readonly roleService: RoleService,
         private readonly userService: UserService,
         private readonly redisService: RedisService,
-        private readonly departmentService: DepartmentService,
+        private readonly classService: ClassService,
         private reflector: Reflector
     ) { }
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const requiredPermissions = this.reflector.get<string[]>('permissions', context.getHandler());
+        const requiredRole = this.reflector.get<string[]>('roles', context.getHandler());
 
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers.authorization;
@@ -39,28 +38,24 @@ export class AuthGuard {
                 return false;
             }
             const secret: string = process.env.ACCESS_TOKEN_KEY;
-            const decodedToken = this.jwtService.verify(token, {secret});
+            const decodedToken = this.jwtService.verify(token, { secret });
             const userId = decodedToken.id;
-            const depId = +request.params.dep_id;
-            const empId = +request.params.emp_id;
-
-            if (requiredPermissions && depId) {
-                const userDepartments = await this.departmentManagementService.getDepartmentIdOfAdmin(userId);
-
-                let hasDepartment = this.checkDepartmentManagement(userDepartments, depId);
-                
-                if (!hasDepartment) {
-                    return false;
-                }
-                if (empId) {
-                    const empDepartment = await this.departmentService.getDepartmentByUserId(empId);
-                    if (empDepartment !== depId) { 
+            const dep_id = +request.params.dep_id;
+            const class_id = +request.params.class_id;
+            const student_id = request.params.student_id;
+            if (requiredRole) {
+                const userRole = await Promise.any([
+                    this.getUserRole(userId),
+                    this.redisService.get(`${token}_role`)
+                ]);
+                if (userRole === 'teacher') {
+                    const hasPermission: boolean = await this.checkTeacherPermission(userId, class_id, student_id);
+                    if (hasPermission === false) { 
                         return false;
                     }
                 }
-                const userPermissions = await this.getUserPermissions(userId);
-                const hasPermission = this.checkPermissions(userPermissions, requiredPermissions);
-                if (!hasPermission) {
+                const hasRole: boolean = this.checkRole(userRole, requiredRole);
+                if (hasRole === false) { 
                     return false;
                 }
             }
@@ -71,16 +66,29 @@ export class AuthGuard {
             return false;
         }
     }
-    private async getUserPermissions(userId: number): Promise<string[]> {
-        const permissions: any[] = await this.permissionService.getPermissions(userId);
-        return permissions.map(permission => permission.name);
+
+    private async checkTeacherPermission(userId: number, class_id: number, student_id: number): Promise<boolean> {
+        if (class_id) {
+            const hasClass: boolean = await this.classService.checkClassOfTeacher(userId, class_id);
+            if (hasClass === false) {
+                return false;
+            }
+            if (student_id) {
+                const classHasStudent = await this.classService.checkStudentOfClass(class_id, student_id);
+                if (classHasStudent === false) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    private async getUserRole(userId: number): Promise<string> {
+        const role: Role = await this.roleService.getRoleOfUser(userId);
+        return role.name;
     }
 
-    private checkPermissions(userPermissions: string[], requiredPermissions: string[]): boolean {
-        return requiredPermissions.every(permission => userPermissions.includes(permission));
-    }
-
-    private checkDepartmentManagement(userDepartments: number[], depId: number): boolean {
-        return userDepartments.includes(depId);
+    private checkRole(userRole: string, requiredRoles: string[]): boolean {
+        return requiredRoles.includes(userRole);
     }
 }

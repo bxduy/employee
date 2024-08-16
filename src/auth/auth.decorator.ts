@@ -1,7 +1,7 @@
 import { applyDecorators, SetMetadata } from "@nestjs/common";
 
-export function Auth(permissions: string[]) {
+export function Roles(roles: string[]) {
     return applyDecorators(
-        SetMetadata('permissions', permissions)
+        SetMetadata('roles', roles)
     )
 }

@@ -4,8 +4,6 @@ export class EditUserDto {
     first_name: string;
     @IsNotEmpty({ message: 'last name is required' })
     last_name: string;
-    @IsNotEmpty({ message: 'username is required' })
-    username: string;
     dob: Date;
     gender: string;
     address: string;

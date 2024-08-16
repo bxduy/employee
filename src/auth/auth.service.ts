@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt'
 import { UserLoginDto } from "../user/dto/userLogin.dto";
@@ -11,14 +11,13 @@ export class AuthService {
     constructor(
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
-        private readonly redisService: RedisService
+        private readonly redisService: RedisService,
     ) { }
 
-    async isExistingUser(userLoginDto: UserLoginDto): Promise<any> {
-
-
+    async login(userLoginDto: UserLoginDto): Promise<any> {
         const user = await this.userService.checkExistingUser(userLoginDto.username);
-
+        const role: string = user.role.name;
+        
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
@@ -28,20 +27,21 @@ export class AuthService {
             const { id, password, access_token, refresh_token, ...userWithoutPassword } = user;
             await Promise.all([
                 this.userService.updateToken(id, accessToken, refreshToken),
-                this.redisService.set(accessToken, accessToken)
+                this.redisService.set(accessToken, accessToken),
+                this.redisService.set(`${accessToken}_role`, role)
             ]);
             return { user: userWithoutPassword, accessToken, refreshToken };
         }
         throw new HttpException('Invalid password', HttpStatus.UNAUTHORIZED);
-
     }
+
 
     private createAccessToken(user: User): string {
         const payload = { id: user.id };
         return this.jwtService.sign(payload, {
             secret: process.env.ACCESS_TOKEN_KEY,
             expiresIn: process.env.ACCESS_TOKEN_EXPIRE,
-          });
+        });
     }
 
     private createRefreshToken(user: User): string {
@@ -49,7 +49,7 @@ export class AuthService {
         return this.jwtService.sign(payload, {
             secret: process.env.REFRESH_TOKEN_KEY,
             expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
-          });
+        });
     }
 
     async refreshToken(token: string): Promise<any> { 

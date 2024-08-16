@@ -3,12 +3,11 @@ import { JwtModule } from "@nestjs/jwt";
 import { UserModule } from "../user/user.module";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
-import { PermissionsModule } from "../permission/permission.module";
-import { DepartmentManagementModule } from "src/departmentManagement/department_management.module";
 import { RedisModule } from "src/redis/redis.module";
-import { AuthGuard } from "./auth.guard";
 import { DepartmentModule } from "src/department/department.module";
 import * as dotenv from "dotenv";
+import { RoleModule } from "src/role/role.module";
+import { ClassModule } from "src/class/class.module";
 dotenv.config({ path: '../.env' });
 @Module({
     imports: [
@@ -21,10 +20,10 @@ dotenv.config({ path: '../.env' });
             signOptions: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE },
         }),
         forwardRef(() => UserModule),
-        PermissionsModule,
-        DepartmentManagementModule,
         RedisModule,
-        DepartmentModule
+        DepartmentModule,
+        RoleModule,
+        ClassModule
     ],
     providers: [AuthService],
     exports: [JwtModule],
