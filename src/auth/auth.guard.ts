@@ -40,7 +40,6 @@ export class AuthGuard {
             const secret: string = process.env.ACCESS_TOKEN_KEY;
             const decodedToken = this.jwtService.verify(token, { secret });
             const userId = decodedToken.id;
-            const dep_id = +request.params.dep_id;
             const class_id = +request.params.class_id;
             const student_id = request.params.student_id;
             if (requiredRole) {
@@ -69,7 +68,7 @@ export class AuthGuard {
 
     private async checkTeacherPermission(userId: number, class_id: number, student_id: number): Promise<boolean> {
         if (class_id) {
-            const hasClass: boolean = await this.classService.checkClassOfTeacher(userId, class_id);
+            const hasClass: boolean = await this.classService.checkClassOfTeacher(class_id, userId);
             if (hasClass === false) {
                 return false;
             }

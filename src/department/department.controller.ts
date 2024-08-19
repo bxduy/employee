@@ -66,15 +66,27 @@ export class DepartmentController {
         return await this.userService.deleteUser(emp_id);
     }
 
-    @Get(':dep_id/users')
+    @Get(':dep_id/students')
     @Roles(['admin'])
     @UseGuards(AuthGuard)
-    async findAll(
+    async findAllStudent(
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10,
         @Param('dep_id') dep_id: number
     ): Promise<any> {
 
-        return await this.userService.getUserOfDepartment(dep_id, page, limit);
+        return await this.userService.getStudentOfDepartment(dep_id, page, limit);
+    }
+
+    @Get(':dep_id/teachers')
+    @Roles(['admin'])
+    @UseGuards(AuthGuard)
+    async findAllTeacher(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+        @Param('dep_id') dep_id: number
+    ): Promise<any> {
+
+        return await this.userService.getTeacherOfDepartment(dep_id, page, limit);
     }
 }

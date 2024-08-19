@@ -52,9 +52,35 @@ export class UserService {
         return await this.userRepository.save(newUser);
     }
 
-    async getUserOfDepartment(dep_id: number, page: number = 1, limit: number = 10): Promise<any> {
+    async getTeacherOfDepartment(dep_id: number, page: number = 1, limit: number = 10): Promise<any> {
         const [users, total] = await this.userRepository.createQueryBuilder('user')
-            .innerJoinAndSelect('user.department', 'department')
+            .innerJoin('user.department', 'department')
+            .innerJoin('user.teacher', 'teacher')
+            .select([
+                'user.id',
+                'user.first_name',
+                'user.last_name',
+                'user.dob',
+                'user.address',
+                'user.gender',
+            ])
+            .where('department.id = :dep_id', { dep_id })
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
+        const data = {
+            users,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
+        return data;
+    }
+
+    async getStudentOfDepartment(dep_id: number, page: number = 1, limit: number = 10): Promise<any> {
+        const [users, total] = await this.userRepository.createQueryBuilder('user')
+            .innerJoin('user.department', 'department')
+            .innerJoin('user.student', 'student')
             .select([
                 'user.id',
                 'user.first_name',
@@ -108,7 +134,6 @@ export class UserService {
         return this.userRepository.findOne({
             select: {
                 id: true,
-                username: true,
                 first_name: true,
                 last_name: true,
                 dob: true,
@@ -226,10 +251,6 @@ export class UserService {
             totalPages: Math.ceil(total / limit),
             currentPage: page
         }
-    }
-
-    async getTeacherOfDepartment(depId: number, page: number = 1, limit: number = 10): Promise<any> {
-
     }
 
 }

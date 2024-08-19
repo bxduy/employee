@@ -7,7 +7,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Internal server error';
+    let errors = null;
+
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
+
+      if (typeof exceptionResponse === 'object') {
+        message = (exceptionResponse as any).message || message;
+        errors = (exceptionResponse as any).errors || null;
+      } else {
+        message = exceptionResponse as string;
+      }
+    }
 
     console.error('Unhandled exception:', exception);
 
@@ -15,7 +30,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: exception instanceof HttpException ? exception.message : 'Internal server error',
+      message: message,
+      errors: errors,
     });
   }
 }

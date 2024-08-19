@@ -15,11 +15,11 @@ export class Student{
     @JoinTable({
         name: 'student_classes',
         joinColumn: {
-            name: 'studentId',
+            name: 'studentUserId',
             referencedColumnName: 'userId',
         },
         inverseJoinColumn: {
-            name: 'classId',
+            name: 'classEntityId',
             referencedColumnName: 'id',
         },
     })

@@ -11,17 +11,19 @@ import { RoleModule } from "src/role/role.module";
 import { RedisModule } from "src/redis/redis.module";
 import { StudentModule } from "src/student/student.module";
 import { GradingCriteria } from "src/grade/gradingCriteria.entity";
+import { Grade } from "src/grade/grade.entity";
+import { StudentClass } from "src/student/studentClass.entity";
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Class, GradingCriteria]),
+        TypeOrmModule.forFeature([Class, GradingCriteria, Grade, StudentClass]),
         forwardRef(() => DepartmentModule),
         TeacherModule,
         forwardRef(() => UserModule),
         forwardRef(() => AuthModule),
         RoleModule,
         RedisModule,
-        StudentModule
+        forwardRef(() => StudentModule) 
     ],
     providers: [ClassService],
     controllers: [ClassController],

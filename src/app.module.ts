@@ -9,6 +9,7 @@ import { DepartmentModule } from './department/department.module';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
 import { ClassModule } from './class/class.module';
+import { StudentModule } from './student/student.module';
 
 
 @Module({
@@ -34,7 +35,8 @@ import { ClassModule } from './class/class.module';
     PermissionsModule,
     DepartmentModule,
     RedisModule,
-    ClassModule
+    ClassModule,
+    StudentModule
   ],
   controllers: [AppController],
   providers: [AppService],

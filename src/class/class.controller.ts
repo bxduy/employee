@@ -7,6 +7,7 @@ import { UserService } from "src/user/user.service";
 import { StudentService } from "src/student/student.service";
 import { Student } from "src/student/student.entity";
 import { Request } from "express";
+import { CreateGradeDto } from "src/grade/dto/create_grade.dto";
 
 @Controller('classes')
 export class ClassController {
@@ -69,6 +70,19 @@ export class ClassController {
         return await this.classService.changeClassStatus(class_id);
     }
 
+    @Get('/teacher-classes')
+    @Roles(['teacher'])
+    @UseGuards(AuthGuard)
+    async getClassesOfTeacher(
+        @Req() req: Request,
+        @Query('page') page: number,
+        @Query('limit') limit: number
+    ): Promise<any> {
+        const { user } = req as any;
+        const userId = user.id;
+        return await this.classService.getClassesOfTeacher(userId, page, limit);
+    }    
+
     @Get(':class_id/students')
     @Roles(['admin', 'teacher'])
     @UseGuards(AuthGuard)
@@ -90,6 +104,18 @@ export class ClassController {
         return await this.studentService.getStudentById(student_id, class_id);
     }
 
+    @Get(':class_id/students/:student_id/grade')
+    @Roles(['student'])
+    @UseGuards(AuthGuard)
+    async getGradeOfStudent(
+        @Param('class_id') class_id: number,
+        @Param('student_id') student_id: number,
+        @Query('page') page: number,
+        @Query('limit') limit: number
+    ): Promise<any> {
+        return await this.classService.getGradeOfStudent(class_id, student_id, page, limit);
+    }
+        
     @Post(':class_id/add-student')
     @Roles(['student'])
     @UseGuards(AuthGuard)
@@ -100,5 +126,35 @@ export class ClassController {
         const { user } = req as any;
         const studentId = user.id;
         return this.classService.addStudentToClass(studentId, class_id);
+    }
+
+    @Get(':class_id/criterias')
+    @Roles(['admin', 'teacher'])
+    @UseGuards(AuthGuard)
+    async getGradeCriteriaOfClass(
+        @Param('class_id') class_id: number
+    ): Promise<any> {
+        return await this.classService.getGradeCriteriaOfClass(class_id);
+    }
+
+    @Post(':class_id/create-grade')
+    @Roles(['teacher'])
+    @UseGuards(AuthGuard)
+    async createGrade(
+        @Param('class_id') class_id: number,
+        @Body() body: CreateGradeDto[]
+    ): Promise<any> {
+        return await this.classService.createGrade(class_id, body);
+    }
+
+    @Get(':class_id/grades')
+    @Roles(['admin', 'teacher'])
+    @UseGuards(AuthGuard)
+    async getGradesOfClass(
+        @Param('class_id') class_id: number,
+        @Query('page') page: number,
+        @Query('limit') limit: number
+    ): Promise<any> { 
+        return this.classService.getGradesOfClass(class_id, page, limit);
     }
 }

@@ -115,6 +115,14 @@ export class UsersController {
         return this.userService.searchUserByDob(startDate, endDate, page, limit);
     }
 
+    @Get(':user_id')
+    @Roles(['admin'])
+    async getUserById(
+        @Param('user_id') userId: number
+    ): Promise<any> {
+        return await this.userService.getUserById(userId);
+    }
+
     @Put(':user_id/edit')
     @Roles(['admin'])
     @UseGuards(AuthGuard)

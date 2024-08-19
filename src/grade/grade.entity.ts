@@ -7,10 +7,10 @@ export class Grade {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => StudentClass, studentClass => studentClass.id)
+  @ManyToOne(() => StudentClass, studentClass => studentClass.grades)
   studentClass: StudentClass;
 
-  @ManyToOne(() => GradingCriteria, gradingCriteria => gradingCriteria.id)
+  @ManyToOne(() => GradingCriteria, gradingCriteria => gradingCriteria.grades)
   gradingCriteria: GradingCriteria;
 
   @Column()
