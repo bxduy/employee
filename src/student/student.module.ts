@@ -8,10 +8,11 @@ import { AuthModule } from "src/auth/auth.module";
 import { RoleModule } from "src/role/role.module";
 import { RedisModule } from "src/redis/redis.module";
 import { ClassModule } from "src/class/class.module";
+import { StudentClass } from "./studentClass.entity";
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Student]),
+        TypeOrmModule.forFeature([Student, StudentClass]),
         forwardRef(() => UserModule),
         forwardRef(() => AuthModule),
         RoleModule,

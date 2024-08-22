@@ -104,17 +104,6 @@ export class ClassController {
         return await this.studentService.getStudentById(student_id, class_id);
     }
 
-    @Get(':class_id/students/:student_id/grade')
-    @Roles(['student'])
-    @UseGuards(AuthGuard)
-    async getGradeOfStudent(
-        @Param('class_id') class_id: number,
-        @Param('student_id') student_id: number,
-        @Query('page') page: number,
-        @Query('limit') limit: number
-    ): Promise<any> {
-        return await this.classService.getGradeOfStudent(class_id, student_id, page, limit);
-    }
         
     @Post(':class_id/add-student')
     @Roles(['student'])

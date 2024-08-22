@@ -73,7 +73,7 @@ export class UsersController {
         return await this.userService.updateUser((Number)(emp_id), body);
     }
 
-    @Post('/change-username-password')
+    @Put('/change-username-password')
     @UseGuards(AuthGuard)
     async changeUsernameAndPassword(
         @Body() body: ChangeUsernamePasswordDto,

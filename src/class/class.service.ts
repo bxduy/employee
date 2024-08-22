@@ -216,25 +216,25 @@ export class ClassService {
 
     async getClassesOfDepartment(dep_id: number, page: number = 1, limit: number = 10): Promise<any> {
         const results = await this.classRepository.createQueryBuilder('class')
-            .innerJoin('class.department', 'department')
-            .innerJoin('class.teacher', 'teacher')
-            .innerJoin('class.students', 'student')
-            .innerJoin('teacher.user', 'user')
+            .leftJoinAndSelect('class.department', 'department')
+            .leftJoinAndSelect('class.teacher', 'teacher')
+            .leftJoinAndSelect('class.students', 'student')
+            .leftJoinAndSelect('teacher.user', 'user')
             .select([
-                'class.id',
-                'class.name',
-                'class.quantity',
-                'class.start_date',
-                'class.end_date',
-                'teacher.userId',
-                'user.first_name',
-                'user.last_name',
-                'COUNT(class.id) as count'
+                'class.id AS class_id',
+                'class.name AS class_name',
+                'class.quantity AS class_quantity',
+                'class.start_date AS class_start_date',
+                'class.end_date AS class_end_date',
+                'teacher.userId AS teacher_id',
+                'user.first_name AS teacher_first_name',
+                'user.last_name AS teacher_last_name',
+                'COUNT(class.id) AS student_count'
             ])
             .where('department.id = :dep_id', { dep_id })
             .groupBy('class.id')
-            .skip((page - 1) * limit)
-            .take(limit)
+            .offset((page - 1) * limit)
+            .limit(limit)
             .getRawMany();
 
         const totalRecords = await this.classRepository.createQueryBuilder('class')
@@ -243,15 +243,7 @@ export class ClassService {
             .getCount();
 
         return {
-            classes: results.map(result => ({
-                id: result.class_id,
-                name: result.class_name,
-                quantity: result.class_quantity,
-                start_date: result.class_start_date,
-                end_date: result.class_end_date,
-                teacher_name: `${result.user_first_name} ${result.user_last_name}`,
-                student_count: parseInt(result.count, 10)
-            })),
+            classes: results,
             total: totalRecords,
             totalPages: Math.ceil(totalRecords / limit),
             currentPage: page
@@ -344,59 +336,38 @@ export class ClassService {
 
     async getGradesOfClass(classId: number, page: number = 1, limit: number = 10): Promise<any> {
         const [studentGrades, total] = await Promise.all([
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
+            this.studentClassRepository
+                .createQueryBuilder('studentClass')
+                .leftJoinAndSelect('studentClass.student', 'student')
+                .leftJoinAndSelect('studentClass.classEntity', 'class')
+                .leftJoinAndSelect('studentClass.grades', 'grade')
+                .leftJoinAndSelect('grade.gradingCriteria', 'gradingCriteria')
+                .leftJoinAndSelect('gradingCriteria.classEntity', 'classEntityForCriteria')
+                .leftJoinAndSelect('student.user', 'user')
                 .where('class.id = :classId', { classId })
+                .groupBy('student.userId')
+                .orderBy('user.last_name', 'ASC')
                 .select([
                     'student.userId AS id',
                     'user.first_name AS first_name',
                     'user.last_name AS last_name',
-                    'gradingCriteria.name AS criteriaName',
-                    'gradingCriteria.weight AS weight',
-                    'grade.score AS score'
+                    'GROUP_CONCAT(gradingCriteria.name ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS criteriaNames',
+                    'GROUP_CONCAT(gradingCriteria.weight ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS weights',
+                    'GROUP_CONCAT(grade.score ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS scores',
+                    'SUM(grade.score * gradingCriteria.weight / 100) AS average_score'
                 ])
-                .orderBy('user.last_name')
-                .skip((page - 1) * limit)
-                .take(limit)
+                .limit(limit)
+                .offset((page - 1) * limit)
                 .getRawMany(),
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
-                .where('class.id = :classId', { classId })
-                .getCount()
+            this.studentClassRepository.count({
+                where: {
+                    classEntity: { id: classId }
+                }
+            })
         ])
 
-        const result = studentGrades.reduce((acc: any, curr: any) => {
-            if (!acc[curr.id]) {
-                acc[curr.id] = {
-                    id: curr.id,
-                    first_name: curr.first_name,
-                    last_name: curr.last_name,
-                    grades: [],
-                    avgScore: 0
-                };
-            }
-            const existingCriteria = acc[curr.id].grades.find((g: any) => g.criteriaName === curr.criteriaName);
-            if (!existingCriteria) {
-                acc[curr.id].grades.push({
-                    criteriaName: curr.criteriaName,
-                    score: curr.score,
-                    weight: curr.weight
-                });
-                acc[curr.id].avgScore += curr.score * (curr.weight / 100);
-            }
-            return acc;
-        }, {});
-
-        const formattedResult = Object.values(result);
-
         return {
-            students: formattedResult,
+            grades: studentGrades,
             total,
             totalPages: Math.ceil(total / limit),
             currentPage: page
@@ -404,136 +375,41 @@ export class ClassService {
     }
 
     async getAllGradesOfStudent(studentId: number, page: number = 1, limit: number = 10): Promise<any> {
-        const [studentGrades, total] = await Promise.all([
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
+        const [grades, total] = await Promise.all([
+            this.studentClassRepository.createQueryBuilder('studentClass')
+                .leftJoin('studentClass.student', 'student')
+                .leftJoin('studentClass.classEntity', 'class')
+                .leftJoin('studentClass.grades', 'grade')
+                .leftJoin('grade.gradingCriteria', 'gradingCriteria')
+                .leftJoin('gradingCriteria.classEntity', 'classEntityForCriteria')
                 .where('student.userId = :studentId', { studentId })
+                .groupBy('class.id')
                 .select([
                     'class.id AS classId',
                     'class.name AS className',
-                    'gradingCriteria.name AS criteriaName',
-                    'gradingCriteria.weight AS weight',
-                    'grade.score AS score'
+                    'GROUP_CONCAT(gradingCriteria.name ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS criteriaNames',
+                    'GROUP_CONCAT(gradingCriteria.weight ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS weights',
+                    'GROUP_CONCAT(grade.score ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS scores',
+                    'SUM(grade.score * gradingCriteria.weight / 100) AS average_score'
                 ])
-                .orderBy('class.name')
-                .addOrderBy('gradingCriteria.name')
-                .skip((page - 1) * limit)
-                .take(limit)
+                .limit(limit)
+                .offset((page - 1) * limit)
                 .getRawMany(),
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
-                .where('student.userId = :studentId', { studentId })
-                .getCount()
+            this.classRepository.count({
+                where: {
+                    students: {
+                        userId: studentId
+                    }
+                }
+            })
         ]);
-
-        const result = studentGrades.reduce((acc: any, curr: any) => {
-            let existingClass = acc.find((cls: any) => cls.classId === curr.classId);
-
-            if (!existingClass) {
-                existingClass = {
-                    classId: curr.classId,
-                    className: curr.className,
-                    grades: [],
-                    avgScore: 0
-                };
-                acc.push(existingClass);
-            }
-
-
-            const existingCriteria = existingClass.grades.find((g: any) => g.criteriaName === curr.criteriaName);
-            if (!existingCriteria) {
-                existingClass.grades.push({
-                    criteriaName: curr.criteriaName,
-                    score: curr.score,
-                    weight: curr.weight
-                });
-                existingClass.avgScore += curr.score * (curr.weight / 100);
-            }
-            return acc;
-        }, []);
-        const formattedResult = Object.values(result);
-        formattedResult.forEach((student: any) => {
-            student.avgScore = parseFloat(student.avgScore.toFixed(2));
-        });
         return {
-            classes: result,
+            grades,
             total,
             totalPages: Math.ceil(total / limit),
             currentPage: page
         };
     }
 
-    async getGradeOfStudent(classId: number, studentId: number, page: number = 1, limit: number = 10): Promise<any> {
-        const [studentGrades, total] = await Promise.all([
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
-                .where('student.userId = :studentId', { studentId })
-                .andWhere('class.id = :classId', { classId })
-                .select([
-                    'student.userId AS id',
-                    'user.first_name AS first_name',
-                    'user.last_name AS last_name',
-                    'gradingCriteria.name AS criteriaName',
-                    'gradingCriteria.weight AS weight',
-                    'grade.score AS score'
-                ])
-                .orderBy('gradingCriteria.name')
-                .skip((page - 1) * limit)
-                .take(limit)
-                .getRawMany(),
-            this.classRepository.createQueryBuilder('class')
-                .innerJoin('class.students', 'student')
-                .innerJoin('student.user', 'user')
-                .innerJoin('class.gradingCriteria', 'gradingCriteria')
-                .innerJoin('gradingCriteria.grades', 'grade')
-                .where('student.userId = :studentId', { studentId })
-                .andWhere('class.id = :classId', { classId })
-                .getCount()
-        ]);
-
-        const result = studentGrades.reduce((acc: any, curr: any) => {
-            if (!acc[curr.id]) {
-                acc[curr.id] = {
-                    id: curr.id,
-                    first_name: curr.first_name,
-                    last_name: curr.last_name,
-                    grades: [],
-                    avgScore: 0
-                };
-            }
-
-            const existingCriteria = acc[curr.id].grades.find((g: any) => g.criteriaName === curr.criteriaName);
-            if (!existingCriteria) {
-                acc[curr.id].grades.push({
-                    criteriaName: curr.criteriaName,
-                    score: curr.score,
-                    weight: curr.weight
-                });
-                acc[curr.id].avgScore += curr.score * (curr.weight / 100);
-            }
-            return acc;
-        }, {});
-
-        const formattedResult = Object.values(result);
-        formattedResult.forEach((student: any) => {
-            student.avgScore = parseFloat(student.avgScore.toFixed(2));
-        });
-
-        return {
-            students: formattedResult,
-            total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page
-        };
-    }
 
 }

@@ -1,10 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, Res } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from 'bcrypt'
 import { UserLoginDto } from "../user/dto/userLogin.dto";
 import { User } from "../user/user.entity";
 import { UserService } from "../user/user.service";
 import { RedisService } from "src/redis/redis.service";
+import { Response } from "express";
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,7 @@ export class AuthService {
         private readonly redisService: RedisService,
     ) { }
 
-    async login(userLoginDto: UserLoginDto): Promise<any> {
+    async login(userLoginDto: UserLoginDto, @Res({ passthrough: true }) res: Response): Promise<any> {
         const user = await this.userService.checkExistingUser(userLoginDto.username);
         const role: string = user.role.name;
         
@@ -30,6 +31,12 @@ export class AuthService {
                 this.redisService.set(accessToken, accessToken),
                 this.redisService.set(`${accessToken}_role`, role)
             ]);
+            res.cookie('accessToken', accessToken, {
+                httpOnly: true,      
+                secure: false,        
+                sameSite: 'strict',  
+                maxAge: 1000 * 60 * 20
+            });
             return { user: userWithoutPassword, accessToken, refreshToken };
         }
         throw new HttpException('Invalid password', HttpStatus.UNAUTHORIZED);
@@ -52,7 +59,7 @@ export class AuthService {
         });
     }
 
-    async refreshToken(token: string): Promise<any> { 
+    async refreshToken(token: string, @Res({ passthrough: true }) res: Response): Promise<any> { 
         const user = await this.userService.checkExistingToken(token, 'refresh_token');
         if (!user) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -62,7 +69,13 @@ export class AuthService {
             this.userService.updateAccessToken(user.id, accessToken),
             this.redisService.set(accessToken, accessToken)
         ]) 
-        return { accessToken };
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,      
+            secure: false,        
+            sameSite: 'strict',  
+            maxAge: 1000 * 60 * 20
+        });
+        return;
     }
 
 }

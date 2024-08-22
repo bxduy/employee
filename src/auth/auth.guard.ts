@@ -22,13 +22,12 @@ export class AuthGuard {
         const requiredRole = this.reflector.get<string[]>('roles', context.getHandler());
 
         const request = context.switchToHttp().getRequest();
-        const authHeader = request.headers.authorization;
-
-        if (!authHeader) {
-            return false;
-        }
-        const token = authHeader.split(' ')[1];
+        const token = request.cookies['accessToken'];
+        console.log(token);
         
+        if (!token) {
+            return false;
+        } 
         try {
             const checkExistingToken = await Promise.any([
                 this.userService.checkExistingToken(token, 'access_token'),
