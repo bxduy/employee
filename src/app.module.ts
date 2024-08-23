@@ -22,6 +22,8 @@ import { Role } from './role/role.entity';
 import { Permission } from './permission/permission.entity';
 import { File } from './file/file.entity';
 import { Department } from './department/department.entity';
+import { Message } from './chat/message.entity';
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
@@ -36,7 +38,7 @@ import { Department } from './department/department.entity';
       username: process.env.DB_USER,
       password: process.env.DB_PASS,
       database: process.env.DB_NAME, 
-      entities: [User, Student, Class, StudentClass, Teacher, Grade, GradingCriteria, Role, Permission, File, Department],
+      entities: [User, Student, Class, StudentClass, Teacher, Grade, GradingCriteria, Role, Permission, File, Department, Message],
       migrations: ["dist/migration/**/*{.ts,.js}"],
       migrationsTableName: "custom_migration_table",
       timezone: 'UTC +7',
@@ -49,7 +51,8 @@ import { Department } from './department/department.entity';
     RedisModule,
     ClassModule,
     StudentModule,
-    SeederModule
+    SeederModule,
+    ChatModule
   ],
   controllers: [AppController],
   providers: [AppService],

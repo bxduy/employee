@@ -11,7 +11,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   app.use(cookieParser());
   app.enableCors({
-    origin: '*', // Chấp nhận tất cả các nguồn gốc. Thay đổi tùy theo nhu cầu của bạn.
+    origin: '*', 
     methods: 'GET,POST,PUT,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   });

@@ -22,7 +22,8 @@ export class AuthGuard {
         const requiredRole = this.reflector.get<string[]>('roles', context.getHandler());
 
         const request = context.switchToHttp().getRequest();
-        const token = request.cookies['accessToken'];
+        // const token = request.cookies['accessToken'];
+        const token = request.headers.authorization.split(' ')[1];
         if (!token) {
             return false;
         } 

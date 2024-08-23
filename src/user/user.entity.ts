@@ -4,6 +4,7 @@ import { Role } from "../role/role.entity";
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { File } from "src/file/file.entity";
 import { Student } from "src/student/student.entity";
+import { Message } from "src/chat/message.entity";
 
 @Entity('users')
 export class User {
@@ -57,4 +58,10 @@ export class User {
 
     @OneToOne(() => Student, (student) => student.user)
     student: Student;
+
+    @OneToMany(() => Message, message => message.sender)
+    sentMessages: Message[];
+
+    @OneToMany(() => Message, message => message.receiver)
+    receivedMessages: Message[];
 }

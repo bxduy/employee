@@ -46,8 +46,8 @@ export class UsersController {
         await Promise.all([
             user.role.name === 'student' ?
                 this.studentService.createStudent(user) : this.teacherService.createTeacher(user),
-            this.fileService.saveFile(file.filename, file.path, "server", user),
-            this.fileService.saveCloud(file, "cloud", user)
+            this.fileService.saveFile(file.filename, file.path, "server", user.id),
+            this.fileService.saveCloud(file, "cloud", user.id)
         ]);
         return;
     }
@@ -64,13 +64,29 @@ export class UsersController {
 
     @Put('/edit')
     @UseGuards(AuthGuard)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: 'src/public/uploads',
+                filename: (req, file, cb) => {
+                    const filename = Date.now() + extname(file.originalname);
+                    cb(null, filename);
+                },
+            }),
+        }),
+    )
     async editUser(
         @Body() body: EditUserDto,
-        @Req() req: Request
+        @Req() req: Request,
+        @UploadedFile() file: Express.Multer.File
     ): Promise<any> {
         const { user } = req as any;
         const emp_id = user.id;
-        return await this.userService.updateUser((Number)(emp_id), body);
+        await this.userService.updateUser((Number)(emp_id), body);
+        if (file) {
+            this.fileService.saveCloud(file, "cloud", emp_id);
+        }
+        return;
     }
 
     @Put('/change-username-password')
@@ -126,11 +142,28 @@ export class UsersController {
     @Put(':user_id/edit')
     @Roles(['admin'])
     @UseGuards(AuthGuard)
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: 'src/public/uploads',
+                filename: (req, file, cb) => {
+                    const filename = Date.now() + extname(file.originalname);
+                    cb(null, filename);
+                },
+            }),
+        }),
+    )
     async adminEditUser(
         @Body() body: EditUserDto,
-        @Param('user_id') user_id: number
+        @Param('user_id') user_id: number,
+        @UploadedFile() file: Express.Multer.File
     ): Promise<any> {
-        return await this.userService.updateUser(+user_id, body);
+        await this.userService.updateUser(+user_id, body);
+        if (file) {
+            await this.fileService.saveCloud(file, "cloud", user_id);
+        }    
+        
+        return ;
     }
 
     @Delete(':user_id/delete')
