@@ -10,6 +10,7 @@ import { GradingCriteria } from "src/grade/gradingCriteria.entity";
 import { Grade } from "src/grade/grade.entity";
 import { CreateGradeDto } from "src/grade/dto/create_grade.dto";
 import { StudentClass } from "src/student/studentClass.entity";
+import { RedisService } from "src/redis/redis.service";
 
 enum classStatus {
     init = "init",
@@ -30,7 +31,8 @@ export class ClassService {
         private readonly studentClassRepository: Repository<StudentClass>,
         private readonly departmentService: DepartmentService,
         private readonly teacherService: TeacherService,
-        private readonly studentService: StudentService
+        private readonly studentService: StudentService,
+        private readonly redisService: RedisService
     ) { }
 
     async createClass(createClassDto: CreateClassDto): Promise<any> {
@@ -98,14 +100,14 @@ export class ClassService {
     async checkClassOfTeacher(classId: number, teacherId: number): Promise<boolean> {
         const cls = await this.classRepository.createQueryBuilder('class')
             .innerJoin('class.teacher', 'teacher').where('teacher.userId = :teacherId', { teacherId })
-            .andWhere('class.id = :classId', { classId }).getOne();
+            .andWhere('class.id = :classId', { classId }).select('class.name').getOne();
         return !!cls;
     }
 
     async checkStudentOfClass(classId: number, studentId: number): Promise<boolean> {
         const student = await this.classRepository.createQueryBuilder('class')
             .innerJoin('class.students', 'student').where('class.id = :classId', { classId })
-            .andWhere('student.studentId = :studentId', { studentId }).getOne();
+            .andWhere('student.studentId = :studentId', { studentId }).select('class.name').getOne();
         return !!student;
     }
 
@@ -335,41 +337,56 @@ export class ClassService {
     }
 
     async getGradesOfClass(classId: number, page: number = 1, limit: number = 10): Promise<any> {
-        const [studentGrades, total] = await Promise.all([
-            this.studentClassRepository
-                .createQueryBuilder('studentClass')
-                .leftJoinAndSelect('studentClass.student', 'student')
-                .leftJoinAndSelect('studentClass.classEntity', 'class')
-                .leftJoinAndSelect('studentClass.grades', 'grade')
-                .leftJoinAndSelect('grade.gradingCriteria', 'gradingCriteria')
-                .leftJoinAndSelect('gradingCriteria.classEntity', 'classEntityForCriteria')
-                .leftJoinAndSelect('student.user', 'user')
-                .where('class.id = :classId', { classId })
-                .groupBy('student.userId')
-                .orderBy('user.last_name', 'ASC')
-                .select([
-                    'student.userId AS id',
-                    'user.first_name AS first_name',
-                    'user.last_name AS last_name',
-                    'GROUP_CONCAT(gradingCriteria.name ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS criteriaNames',
-                    'GROUP_CONCAT(gradingCriteria.weight ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS weights',
-                    'GROUP_CONCAT(grade.score ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS scores',
-                    'SUM(grade.score * gradingCriteria.weight / 100) AS average_score'
-                ])
-                .limit(limit)
-                .offset((page - 1) * limit)
-                .getRawMany(),
-            this.studentClassRepository.count({
-                where: {
-                    classEntity: { id: classId }
-                }
-            })
-        ])
+        const cacheKey = `gradesOfClass:${classId}:page=${page}:limit=${limit}`;
+        const cachedData = await this.redisService.get(cacheKey);
+        let grades: any;
+        let totalRecords: number;
+        if (!cachedData) {
+            const [studentGrades, total] = await Promise.all([
+                this.studentClassRepository
+                    .createQueryBuilder('studentClass')
+                    .innerJoin('studentClass.student', 'student')
+                    .innerJoin('studentClass.classEntity', 'class')
+                    .innerJoin('studentClass.grades', 'grade')
+                    .innerJoin('grade.gradingCriteria', 'gradingCriteria')
+                    .innerJoin('student.user', 'user')
+                    .where('class.id = :classId', { classId })
+                    .groupBy('student.userId')
+                    .orderBy('user.last_name', 'ASC')
+                    .select([
+                        'student.userId AS id',
+                        'user.first_name AS first_name',
+                        'user.last_name AS last_name',
+                        'GROUP_CONCAT(gradingCriteria.name ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS criteriaNames',
+                        'GROUP_CONCAT(gradingCriteria.weight ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS weights',
+                        'GROUP_CONCAT(grade.score ORDER BY gradingCriteria.name ASC SEPARATOR ", ") AS scores',
+                        'SUM(grade.score * gradingCriteria.weight / 100) AS average_score'
+                    ])
+                    .limit(limit)
+                    .offset((page - 1) * limit)
+                    .getRawMany(),
+                this.studentClassRepository.count({
+                    where: {
+                        classEntity: { id: classId }
+                    }
+                })
+            ]);
+            await this.redisService.set(cacheKey, JSON.stringify({
+                studentGrades,
+                total
+            }), 60*60);
+            grades = studentGrades;
+            totalRecords = total;
+        } else {
+            const data = JSON.parse(cachedData);
+            grades = data.studentGrades;
+            totalRecords = data.total;
+        }
 
         return {
-            grades: studentGrades,
-            total,
-            totalPages: Math.ceil(total / limit),
+            grades,
+            totalRecords,
+            totalPages: Math.ceil(totalRecords / limit),
             currentPage: page
         };
     }
@@ -381,7 +398,6 @@ export class ClassService {
                 .leftJoin('studentClass.classEntity', 'class')
                 .leftJoin('studentClass.grades', 'grade')
                 .leftJoin('grade.gradingCriteria', 'gradingCriteria')
-                .leftJoin('gradingCriteria.classEntity', 'classEntityForCriteria')
                 .where('student.userId = :studentId', { studentId })
                 .groupBy('class.id')
                 .select([

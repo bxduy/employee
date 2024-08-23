@@ -23,8 +23,6 @@ export class AuthGuard {
 
         const request = context.switchToHttp().getRequest();
         const token = request.cookies['accessToken'];
-        console.log(token);
-        
         if (!token) {
             return false;
         } 
@@ -32,7 +30,7 @@ export class AuthGuard {
             const checkExistingToken = await Promise.any([
                 this.userService.checkExistingToken(token, 'access_token'),
                 this.redisService.get(token)
-            ]) 
+            ]); 
             if (!checkExistingToken) {
                 return false;
             }
@@ -40,7 +38,7 @@ export class AuthGuard {
             const decodedToken = this.jwtService.verify(token, { secret });
             const userId = decodedToken.id;
             const class_id = +request.params.class_id;
-            const student_id = request.params.student_id;
+            const student_id = +request.params.student_id;
             if (requiredRole) {
                 const userRole = await Promise.any([
                     this.getUserRole(userId),
@@ -82,7 +80,7 @@ export class AuthGuard {
     }
     
     private async getUserRole(userId: number): Promise<string> {
-        const role: Role = await this.roleService.getRoleOfUser(userId);
+        const role = await this.roleService.getRoleOfUser(userId);
         return role.name;
     }
 

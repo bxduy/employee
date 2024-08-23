@@ -4,6 +4,7 @@ import { Role } from './role/role.entity';
 import { Permission } from './permission/permission.entity';
 import { Department } from './department/department.entity';
 import * as dotenv from 'dotenv';
+import { Student } from './student/student.entity';
 dotenv.config({ path: '../.env' });
 
 export const AppDataSource = new DataSource({
@@ -13,7 +14,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [User, Role, Permission, Department],
+  entities: [User, Student],
   migrations: ['./migrations/**/*{.ts,.js}'],
-  synchronize: false, // Set this to false if using migrations
+  synchronize: false, 
 });

@@ -99,7 +99,7 @@ export class UsersController {
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10
     ): Promise<User[]> {  
-        return await this.userService.searchUserByName(name, page, limit);
+        return await this.userService.searchUserByName(name, +page, +limit);
     }
 
     @Get('/search-dob')
@@ -112,7 +112,7 @@ export class UsersController {
     ): Promise<User[]> {
         const startDate = new Date(start);
         const endDate = new Date(end);
-        return this.userService.searchUserByDob(startDate, endDate, page, limit);
+        return this.userService.searchUserByDob(startDate, endDate, +page, +limit);
     }
 
     @Get(':user_id')

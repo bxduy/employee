@@ -80,7 +80,7 @@ export class ClassController {
     ): Promise<any> {
         const { user } = req as any;
         const userId = user.id;
-        return await this.classService.getClassesOfTeacher(userId, page, limit);
+        return await this.classService.getClassesOfTeacher(userId, +page, +limit);
     }    
 
     @Get(':class_id/students')
@@ -91,7 +91,7 @@ export class ClassController {
         @Query('page') page: number,
         @Query('limit') limit: number
     ): Promise<any> {
-        return await this.studentService.getStudents(class_id, page, limit);
+        return await this.studentService.getStudents(class_id, +page, +limit);
     }
 
     @Get(':class_id/students/:student_id')
@@ -144,6 +144,6 @@ export class ClassController {
         @Query('page') page: number,
         @Query('limit') limit: number
     ): Promise<any> { 
-        return this.classService.getGradesOfClass(class_id, page, limit);
+        return this.classService.getGradesOfClass(class_id, +page, +limit);
     }
 }

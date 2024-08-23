@@ -13,9 +13,11 @@ export class RoleService {
         return await this.roleRepository.findOneBy({ id });
     }
 
-    async getRoleOfUser(userId: number): Promise<Role> {
+    async getRoleOfUser(userId: number): Promise<any> {
         return await this.roleRepository.createQueryBuilder('role')
             .innerJoin('role.users', 'user')
-            .where('user.id = :userId', { userId }).getOne();
+            .where('user.id = :userId', { userId })
+            .select('role.name')
+            .getOne();
     }
 }

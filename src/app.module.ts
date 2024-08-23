@@ -10,6 +10,18 @@ import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
 import { ClassModule } from './class/class.module';
 import { StudentModule } from './student/student.module';
+import { SeederModule } from './seeding/seeder.module';
+import { User } from './user/user.entity';
+import { Student } from './student/student.entity';
+import { Class } from './class/class.entity';
+import { StudentClass } from './student/studentClass.entity';
+import { Teacher } from './teacher/teacher.entity';
+import { Grade } from './grade/grade.entity';
+import { GradingCriteria } from './grade/gradingCriteria.entity';
+import { Role } from './role/role.entity';
+import { Permission } from './permission/permission.entity';
+import { File } from './file/file.entity';
+import { Department } from './department/department.entity';
 
 
 @Module({
@@ -24,11 +36,11 @@ import { StudentModule } from './student/student.module';
       username: process.env.DB_USER,
       password: process.env.DB_PASS,
       database: process.env.DB_NAME, 
-      entities: ["dist/**/*.entity{.ts,.js}"],
+      entities: [User, Student, Class, StudentClass, Teacher, Grade, GradingCriteria, Role, Permission, File, Department],
       migrations: ["dist/migration/**/*{.ts,.js}"],
       migrationsTableName: "custom_migration_table",
       timezone: 'UTC +7',
-      logging: true 
+      logging: false 
     }),
     AuthModule,
     UserModule,
@@ -36,7 +48,8 @@ import { StudentModule } from './student/student.module';
     DepartmentModule,
     RedisModule,
     ClassModule,
-    StudentModule
+    StudentModule,
+    SeederModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,8 +6,6 @@ import { File } from "src/file/file.entity";
 import { Student } from "src/student/student.entity";
 
 @Entity('users')
-@Index(["first_name", "last_name"])
-@Index(["dob"])
 export class User {
     @PrimaryGeneratedColumn()
     id?: number;

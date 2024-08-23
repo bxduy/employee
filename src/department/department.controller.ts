@@ -75,7 +75,7 @@ export class DepartmentController {
         @Param('dep_id') dep_id: number
     ): Promise<any> {
 
-        return await this.userService.getStudentOfDepartment(dep_id, page, limit);
+        return await this.userService.getStudentOfDepartment(dep_id, +page, +limit);
     }
 
     @Get(':dep_id/teachers')
@@ -87,6 +87,6 @@ export class DepartmentController {
         @Param('dep_id') dep_id: number
     ): Promise<any> {
 
-        return await this.userService.getTeacherOfDepartment(dep_id, page, limit);
+        return await this.userService.getTeacherOfDepartment(dep_id, +page, +limit);
     }
 }
